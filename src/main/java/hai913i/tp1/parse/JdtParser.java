@@ -34,9 +34,7 @@ public final class JdtParser {
         parser.setResolveBindings(true);
         parser.setBindingsRecovery(true);
 
-        // 1. JAR externes du projet analysé (éventuellement aucun)
-        // 2. racine des sources   3. encodage
-        // 4. true : inclure le JDK qui exécute l'analyseur (java.lang...)
+
         parser.setEnvironment(
                 classpath.toArray(String[]::new),
                 new String[] {sources.sourceRoot().toString()},

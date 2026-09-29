@@ -8,7 +8,7 @@ import org.eclipse.jdt.core.compiler.IProblem;
 import hai913i.tp1.parse.JdtParser;
 import hai913i.tp1.parse.JdtParser.ParsedFile;
 import hai913i.tp1.parse.ProjectSources;
-
+import hai913i.tp1.extract.AstPrinter;
 
 public final class Main {
 
@@ -45,7 +45,15 @@ public final class Main {
         System.out.println("Unites de compilation  : " + files.size());
         System.out.println("Erreurs de compilation : " + errors);
         
-        
+        for(ParsedFile file : files) {
+            if(file.path().getFileName().toString().equals("Dvd.java" ) || file.path().getFileName().toString().equals("Category.java" )) {
+                System.out.println("Visiting file: " + file.path().getFileName().toString());
+                AstPrinter visitor = new AstPrinter();
+                file.unit().accept(visitor);
+            }
+
+
+        }
 
     }
 }
