@@ -1,6 +1,8 @@
 package hai913i.tp1.extract;
 import java.util.Deque;
 import java.util.LinkedList;
+import java.util.List;
+import java.util.StringJoiner;
 
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.ASTVisitor;
@@ -46,6 +48,14 @@ public class CallVisitor extends ASTVisitor {
         return root instanceof CompilationUnit cu ? cu.getLineNumber(node.getStartPosition()) : -1;
     }
 
+    private static String argumentsText(List<?> arguments) {
+        StringJoiner text = new StringJoiner(", ", "(", ")");
+        for (Object argument : arguments) {
+            text.add(argument.toString());
+        }
+        return text.toString();
+    }
+
     private void record(IMethodBinding methodBinding, String receiverType, boolean isSuperCall, int line, String callText) {
         IMethodBinding b = currentMethod();
         String caller = b != null ? b.getDeclaringClass().getName() + "." + b.getName() + ", " : "";
@@ -53,19 +63,17 @@ public class CallVisitor extends ASTVisitor {
         ITypeBinding declaringClass = methodDeclaration != null ? methodDeclaration.getDeclaringClass() : null;
         boolean isResolved = declaringClass != null;
 
-        String cible;
         if (isResolved) {
             if (declaringClass.isFromSource()) {
                 internalMethodCalls++;
             } else {
                 externalMethodCalls++;
             }
-            cible = declaringClass.getQualifiedName() + "#" + methodDeclaration.getName();
         } else {
             unresolvedMethodCalls++;
-            cible = "non résolue";
         }
-        System.out.println(caller + "Ligne" + line + ", " + callText + "(), " + (isSuperCall ? "[SUPER] " : "") + "Receveur: " + receiverType + ", Cible: " + cible);
+        String cible = utility.methodIdentifier(methodBinding);
+        System.out.println(caller + "Ligne" + line + ", " + callText + ", " + (isSuperCall ? "[SUPER] " : "") + "Receveur: " + receiverType + ", Cible: " + cible);
     }
     
     @Override
@@ -77,14 +85,14 @@ public class CallVisitor extends ASTVisitor {
         String callText;
         if (expr != null) {
             receiver = expr.resolveTypeBinding();
-            callText = expr + "." + node.getName();
+            callText = expr + "." + node.getName() + argumentsText(node.arguments());
         } else {
             if (binding != null && Modifier.isStatic(binding.getModifiers())) {
                 receiver = binding.getDeclaringClass();
             } else {
                 receiver = currentType();
             }
-            callText = node.getName().toString();
+            callText = node.getName() + argumentsText(node.arguments());
         }
         record(binding, typeName(receiver), false, lineOf(node), callText);
         return true; // Continue visiting childs
@@ -95,7 +103,7 @@ public class CallVisitor extends ASTVisitor {
         methodCalls++;
         ITypeBinding currentType = currentType();
         String receiverType = typeName(currentType != null ? currentType.getSuperclass() : null);
-        record(node.resolveMethodBinding(), receiverType, true, lineOf(node), "super." + node.getName());
+        record(node.resolveMethodBinding(), receiverType, true, lineOf(node), "super." + node.getName() + argumentsText(node.arguments()));
         return true; // Continue visiting childs
     }
 
