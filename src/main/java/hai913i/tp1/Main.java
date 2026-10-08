@@ -8,6 +8,7 @@ import org.eclipse.jdt.core.compiler.IProblem;
 import hai913i.tp1.parse.JdtParser;
 import hai913i.tp1.parse.JdtParser.ParsedFile;
 import hai913i.tp1.parse.ProjectSources;
+import hai913i.tp1.extract.CallVisitor;
 import hai913i.tp1.extract.StructureVisitor;
 
 public final class Main {
@@ -50,9 +51,20 @@ public final class Main {
         for (ParsedFile file : files) {
             file.unit().accept(structure);
         }
-        System.out.println();
-        structure.lignes().forEach(System.out::println);
-        System.out.println(structure.report());
+        // System.out.println();
+        // structure.lignes().forEach(System.out::println);
+        // System.out.println(structure.report());
 
+        // Appels de methodes (un seul visiteur pour tous les fichiers).
+        CallVisitor calls = new CallVisitor();
+        System.out.println();
+        for (ParsedFile file : files) {
+            file.unit().accept(calls);
+        }
+        System.out.println("Appels de methodes     : " + calls.methodCalls);
+        System.out.println("Appels internes         : " + calls.internalMethodCalls);
+        System.out.println("Appels externes         : " + calls.externalMethodCalls);
+        System.out.println("Appels non resolus      : " + calls.unresolvedMethodCalls);
     }
+
 }
