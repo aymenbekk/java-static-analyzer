@@ -25,7 +25,7 @@ public class CallVisitor extends ASTVisitor {
     public int unresolvedMethodCalls = 0;
 
     private final Deque<ITypeBinding> typeStack = new LinkedList<>();
-    private final Deque<MethodDeclaration> methodStack = new LinkedList<>();
+    private final Deque<IMethodBinding> methodStack = new LinkedList<>();
 
     private int anonymousDepth = 0;
 
@@ -33,7 +33,7 @@ public class CallVisitor extends ASTVisitor {
         return typeStack.peek(); 
     }
 
-    private MethodDeclaration currentMethod() {
+    private IMethodBinding currentMethod() {
         return methodStack.peek(); 
     }
 
@@ -47,32 +47,27 @@ public class CallVisitor extends ASTVisitor {
     }
 
     private void record(IMethodBinding methodBinding, String receiverType, boolean isSuperCall, int line, String callText) {
-        MethodDeclaration currentMethod = currentMethod();
-        IMethodBinding b = currentMethod != null ? currentMethod.resolveBinding() : null;
+        IMethodBinding b = currentMethod();
         String caller = b != null ? b.getDeclaringClass().getName() + "." + b.getName() + ", " : "";
+        IMethodBinding methodDeclaration = methodBinding != null ? methodBinding.getMethodDeclaration() : null;
+        ITypeBinding declaringClass = methodDeclaration != null ? methodDeclaration.getDeclaringClass() : null;
+        boolean isResolved = declaringClass != null;
+
         String cible;
-        if (methodBinding != null) {
-            IMethodBinding methodDeclaration = methodBinding.getMethodDeclaration();
-            ITypeBinding declaringClass = methodDeclaration.getDeclaringClass();
-            if (declaringClass != null) {
-                if(declaringClass.isFromSource()) {
-                    internalMethodCalls++;
-                } else {
-                    externalMethodCalls++;
-                }
-                cible = declaringClass.getQualifiedName() + "." + methodDeclaration.getName();
+        if (isResolved) {
+            if (declaringClass.isFromSource()) {
+                internalMethodCalls++;
+            } else {
+                externalMethodCalls++;
             }
-            else{
-                unresolvedMethodCalls++;
-                cible = "non résolue";
-            }
-        }
-        else{
+            cible = declaringClass.getQualifiedName() + "." + methodDeclaration.getName();
+        } else {
             unresolvedMethodCalls++;
             cible = "non résolue";
         }
         System.out.println(caller + "Ligne" + line + ", " + callText + "(), " + (isSuperCall ? "[SUPER] " : "") + "Receveur: " + receiverType + ", Cible: " + cible);
     }
+    
     @Override
     public boolean visit(MethodInvocation node) {
         methodCalls++;
@@ -151,7 +146,7 @@ public class CallVisitor extends ASTVisitor {
     @Override
     public boolean visit(MethodDeclaration node) {
         if (anonymousDepth == 0) {
-            methodStack.push(node);
+            methodStack.push(node.resolveBinding());
         }
         return true; // Continue visiting childs
     }
