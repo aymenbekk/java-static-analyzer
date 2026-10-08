@@ -56,7 +56,7 @@ public class CallVisitor extends ASTVisitor {
         return text.toString();
     }
 
-    private void record(IMethodBinding methodBinding, String receiverType, boolean isSuperCall, int line, String callText) {
+    private void record(IMethodBinding methodBinding, String receiverType, int line, String callText) {
         IMethodBinding b = currentMethod();
         String caller = b != null ? b.getDeclaringClass().getName() + "." + b.getName() + ", " : "";
         IMethodBinding methodDeclaration = methodBinding != null ? methodBinding.getMethodDeclaration() : null;
@@ -73,7 +73,7 @@ public class CallVisitor extends ASTVisitor {
             unresolvedMethodCalls++;
         }
         String cible = utility.methodIdentifier(methodBinding);
-        System.out.println(caller + "Ligne" + line + ", " + callText + ", " + (isSuperCall ? "[SUPER] " : "") + "Receveur: " + receiverType + ", Cible: " + cible);
+        System.out.println(caller + "Ligne" + line + ", " + callText + ", " +  "Receveur: " + receiverType + ", Cible: " + cible);
     }
     
     @Override
@@ -94,7 +94,7 @@ public class CallVisitor extends ASTVisitor {
             }
             callText = node.getName() + argumentsText(node.arguments());
         }
-        record(binding, typeName(receiver), false, lineOf(node), callText);
+        record(binding, typeName(receiver), lineOf(node), callText);
         return true; // Continue visiting childs
     }
 
@@ -103,7 +103,7 @@ public class CallVisitor extends ASTVisitor {
         methodCalls++;
         ITypeBinding currentType = currentType();
         String receiverType = typeName(currentType != null ? currentType.getSuperclass() : null);
-        record(node.resolveMethodBinding(), receiverType, true, lineOf(node), "super." + node.getName() + argumentsText(node.arguments()));
+        record(node.resolveMethodBinding(), receiverType, lineOf(node), "super." + node.getName() + argumentsText(node.arguments()));
         return true; // Continue visiting childs
     }
 
