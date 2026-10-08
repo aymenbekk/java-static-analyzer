@@ -60,7 +60,7 @@ public class CallVisitor extends ASTVisitor {
             } else {
                 externalMethodCalls++;
             }
-            cible = declaringClass.getQualifiedName() + "." + methodDeclaration.getName();
+            cible = declaringClass.getQualifiedName() + "#" + methodDeclaration.getName();
         } else {
             unresolvedMethodCalls++;
             cible = "non résolue";
