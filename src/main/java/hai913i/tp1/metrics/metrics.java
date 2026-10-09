@@ -12,7 +12,7 @@ import hai913i.tp1.model.TypeFact;
 
 public class metrics {
     
-    public ProjectFacts facts;
+    private final ProjectFacts facts;
 
     public record MaxParameters(int count, List<MethodFact> methods) { }
 
