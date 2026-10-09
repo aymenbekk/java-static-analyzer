@@ -9,7 +9,10 @@ import hai913i.tp1.parse.JdtParser;
 import hai913i.tp1.parse.JdtParser.ParsedFile;
 import hai913i.tp1.parse.ProjectSources;
 import hai913i.tp1.extract.CallVisitor;
+import hai913i.tp1.extract.FactsBuilder;
 import hai913i.tp1.extract.StructureVisitor;
+import hai913i.tp1.model.ProjectFacts;
+import hai913i.tp1.report.TextReport;
 
 public final class Main {
 
@@ -46,25 +49,29 @@ public final class Main {
         System.out.println("Unites de compilation  : " + files.size());
         System.out.println("Erreurs de compilation : " + errors);
 
+        FactsBuilder facts = new FactsBuilder();
+        for (ParsedFile file : files) {
+            facts.addSourceFile(file.path());
+        }
+
         // A2 : structure de chaque type (un seul visiteur pour tous les fichiers).
-        StructureVisitor structure = new StructureVisitor();
+        StructureVisitor structure = new StructureVisitor(facts);
         for (ParsedFile file : files) {
             file.unit().accept(structure);
         }
-        // System.out.println();
-        // structure.lignes().forEach(System.out::println);
-        // System.out.println(structure.report());
 
-        // Appels de methodes (un seul visiteur pour tous les fichiers).
-        CallVisitor calls = new CallVisitor();
-        System.out.println();
+        // A3 : appels de methodes (un seul visiteur pour tous les fichiers).
+        CallVisitor calls = new CallVisitor(facts);
         for (ParsedFile file : files) {
             file.unit().accept(calls);
         }
-        System.out.println("Appels de methodes     : " + calls.methodCalls);
-        System.out.println("Appels internes         : " + calls.internalMethodCalls);
-        System.out.println("Appels externes         : " + calls.externalMethodCalls);
-        System.out.println("Appels non resolus      : " + calls.unresolvedMethodCalls);
+
+        ProjectFacts projectFacts = facts.build();
+
+        // Affichage : ne lit que le modele de faits (aucune classe de JDT).
+        System.out.println();
+        TextReport.print(projectFacts);
+        System.out.println("Appels orphelins   : " + facts.orphanCalls());
     }
 
 }

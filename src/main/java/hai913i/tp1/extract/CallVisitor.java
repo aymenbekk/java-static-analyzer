@@ -1,8 +1,7 @@
 package hai913i.tp1.extract;
 import java.util.Deque;
 import java.util.LinkedList;
-import java.util.List;
-import java.util.StringJoiner;
+import java.util.Optional;
 
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.ASTVisitor;
@@ -19,12 +18,15 @@ import org.eclipse.jdt.core.dom.RecordDeclaration;
 import org.eclipse.jdt.core.dom.MethodDeclaration;
 import org.eclipse.jdt.core.dom.Modifier;
 
+import hai913i.tp1.model.CallFact;
+
 public class CallVisitor extends ASTVisitor {
 
-    public int methodCalls = 0;
-    public int externalMethodCalls = 0;
-    public int internalMethodCalls = 0;
-    public int unresolvedMethodCalls = 0;
+    private final FactsBuilder facts;
+
+    public CallVisitor(FactsBuilder facts) {
+        this.facts = facts;
+    }
 
     private final Deque<ITypeBinding> typeStack = new LinkedList<>();
     private final Deque<IMethodBinding> methodStack = new LinkedList<>();
@@ -48,74 +50,60 @@ public class CallVisitor extends ASTVisitor {
         return root instanceof CompilationUnit cu ? cu.getLineNumber(node.getStartPosition()) : -1;
     }
 
-    private static String argumentsText(List<?> arguments) {
-        StringJoiner text = new StringJoiner(", ", "(", ")");
-        for (Object argument : arguments) {
-            text.add(argument.toString());
+    private void record(IMethodBinding methodBinding, String receiverType, int line) {
+        IMethodBinding caller = currentMethod();
+        if (caller == null) {
+            return; 
         }
-        return text.toString();
-    }
-
-    private void record(IMethodBinding methodBinding, String receiverType, int line, String callText) {
-        IMethodBinding b = currentMethod();
-        String caller = b != null ? b.getDeclaringClass().getName() + "." + b.getName() + ", " : "";
         IMethodBinding methodDeclaration = methodBinding != null ? methodBinding.getMethodDeclaration() : null;
         ITypeBinding declaringClass = methodDeclaration != null ? methodDeclaration.getDeclaringClass() : null;
-        boolean isResolved = declaringClass != null;
+        boolean resolved = declaringClass != null;
+        boolean internal = resolved && declaringClass.isFromSource();
 
-        if (isResolved) {
-            if (declaringClass.isFromSource()) {
-                internalMethodCalls++;
-            } else {
-                externalMethodCalls++;
-            }
-        } else {
-            unresolvedMethodCalls++;
-        }
-        String cible = utility.methodIdentifier(methodBinding);
-        System.out.println(caller + "Ligne" + line + ", " + callText + ", " +  "Receveur: " + receiverType + ", Cible: " + cible);
+        Optional<String> targetId = resolved ? Optional.of(utility.methodIdentifier(methodBinding)) : Optional.empty();
+
+        facts.addCall(new CallFact(utility.methodIdentifier(caller), targetId, receiverType, line, resolved, internal));
     }
-    
+
     @Override
     public boolean visit(MethodInvocation node) {
-        methodCalls++;
         IMethodBinding binding = node.resolveMethodBinding();
         Expression expr = node.getExpression();
         ITypeBinding receiver;
-        String callText;
         if (expr != null) {
             receiver = expr.resolveTypeBinding();
-            callText = expr + "." + node.getName() + argumentsText(node.arguments());
+        } else if (binding != null && Modifier.isStatic(binding.getModifiers())) {
+            receiver = binding.getDeclaringClass();
         } else {
-            if (binding != null && Modifier.isStatic(binding.getModifiers())) {
-                receiver = binding.getDeclaringClass();
-            } else {
-                receiver = currentType();
-            }
-            callText = node.getName() + argumentsText(node.arguments());
+            receiver = currentType();
         }
-        record(binding, typeName(receiver), lineOf(node), callText);
+        record(binding, typeName(receiver), lineOf(node));
         return true; // Continue visiting childs
     }
 
     @Override
     public boolean visit(SuperMethodInvocation node) {
-        methodCalls++;
         ITypeBinding currentType = currentType();
         String receiverType = typeName(currentType != null ? currentType.getSuperclass() : null);
-        record(node.resolveMethodBinding(), receiverType, lineOf(node), "super." + node.getName() + argumentsText(node.arguments()));
+        record(node.resolveMethodBinding(), receiverType, lineOf(node));
         return true; // Continue visiting childs
     }
 
     @Override
     public boolean visit(TypeDeclaration node) {
         typeStack.push(node.resolveBinding());
+        if (node.isLocalTypeDeclaration()) {
+            anonymousDepth++;
+        }
         return true; // Continue visiting childs
     }
 
     @Override
     public void endVisit(TypeDeclaration node) {
         typeStack.pop();
+        if (node.isLocalTypeDeclaration()) {
+            anonymousDepth--;
+        }
     }
 
     @Override

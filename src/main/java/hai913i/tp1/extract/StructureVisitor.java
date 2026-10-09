@@ -5,8 +5,11 @@ import java.util.List;
 
 import org.eclipse.jdt.core.dom.ASTVisitor;
 import org.eclipse.jdt.core.dom.AbstractTypeDeclaration;
+import org.eclipse.jdt.core.dom.Block;
+import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.EnumDeclaration;
 import org.eclipse.jdt.core.dom.FieldDeclaration;
+import org.eclipse.jdt.core.dom.IMethodBinding;
 import org.eclipse.jdt.core.dom.ITypeBinding;
 import org.eclipse.jdt.core.dom.MethodDeclaration;
 import org.eclipse.jdt.core.dom.Modifier;
@@ -15,24 +18,17 @@ import org.eclipse.jdt.core.dom.TypeDeclaration;
 import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
 import org.eclipse.jdt.core.dom.AnonymousClassDeclaration;
 
+import hai913i.tp1.model.FieldFact;
+import hai913i.tp1.model.MethodFact;
+import hai913i.tp1.model.TypeFact;
+
 
 public class StructureVisitor extends ASTVisitor {
 
+    private final FactsBuilder facts;
 
-    private int classes, interfaces, enums, records;
-    private int methods, constructors, fields;
-
-    private final List<String> lignes = new ArrayList<>();
-
-    public List<String> lignes() {
-        return lignes;
-    }
-
-    public String report() {
-        return (classes + interfaces + enums + records) + " types : "
-                + classes + " classes, " + interfaces + " interfaces, " + enums + " énumérations, "
-                + records + " records ; " + methods + " méthodes, dont " + constructors
-                + " constructeurs ; " + fields + " attributs";
+    public StructureVisitor(FactsBuilder facts) {
+        this.facts = facts;
     }
 
     @Override
@@ -41,89 +37,85 @@ public class StructureVisitor extends ASTVisitor {
     }
     @Override
     public boolean visit(TypeDeclaration node) {
-        printType(node);
-        return true; 
+        buildType(node);
+        return true;
     }
 
     @Override
     public boolean visit(EnumDeclaration node) {
-        printType(node);
+        buildType(node);
         return true;
     }
 
     @Override
     public boolean visit(RecordDeclaration node) {
-        printType(node);
+        buildType(node);
         return true;
     }
 
     @Override
     public boolean visit(MethodDeclaration node) {
-        return false; 
+        return false;
     }
 
-    private void printType(AbstractTypeDeclaration node) {
+    private void buildType(AbstractTypeDeclaration node) {
         ITypeBinding type = node.resolveBinding();
 
-        lignes.add("Type : " + type.getQualifiedName());
-        lignes.add("  genre      : " + Type(type));
-        if (type.isInterface()) {
-            interfaces++;
-        } else if (type.isEnum()) {
-            enums++;
-        } else if (type.isRecord()) {
-            records++;
-        } else {
-            classes++;
-        }
-        lignes.add("  paquetage  : " + type.getPackage().getName());
-
-        String superClasses = "";
+        List<String> superclasses = new ArrayList<>();
         for (ITypeBinding s = type.getSuperclass(); s != null && s.getSuperclass() != null; s = s.getSuperclass()) {
-            superClasses += s.getErasure().getQualifiedName() + " ";
+            superclasses.add(s.getErasure().getQualifiedName());
         }
-        String interfaces = "";
+        List<String> interfaces = new ArrayList<>();
         for (ITypeBinding i : type.getInterfaces()) {
-            interfaces += i.getQualifiedName() + " ";
+            interfaces.add(i.getQualifiedName());
         }
-        lignes.add("  superclasses : " + superClasses);
-        lignes.add("  interfaces   : " + interfaces);
 
-
-        lignes.add("  attributs :");
+        List<FieldFact> fields = new ArrayList<>();
         for (Object o : node.bodyDeclarations()) {
             if (o instanceof FieldDeclaration field) {
                 for (Object f : field.fragments()) {
                     VariableDeclarationFragment fragment = (VariableDeclarationFragment) f;
-                    fields++;
-                    lignes.add("    - " + fragment.getName() + " : " + field.getType()
-                            + " (" + visibility(field.getModifiers(), type) + ")");
+                    fields.add(new FieldFact(fragment.getName().getIdentifier(), field.getType().toString(),
+                            visibility(field.getModifiers(), type)));
                 }
             }
         }
 
-
-        lignes.add("  méthodes :");
+        List<MethodFact> methods = new ArrayList<>();
         for (Object o : node.bodyDeclarations()) {
             if (o instanceof MethodDeclaration method) {
-                methods++;
-                if (method.isConstructor()) {
-                    constructors++;
+                IMethodBinding binding = method.resolveBinding();
+                List<String> parameterTypes = new ArrayList<>();
+                if (binding != null) {
+                    for (ITypeBinding p : binding.getParameterTypes()) {
+                        parameterTypes.add(p.getErasure().getQualifiedName());
+                    }
                 }
-                lignes.add("    - " + method.getName()
-                        + " paramsCount=" + method.parameters().size()
-                        + " constructeur=" + (method.isConstructor() ? "oui" : "non"));
+                methods.add(new MethodFact(utility.methodIdentifier(binding), method.getName().getIdentifier(),
+                        List.copyOf(parameterTypes), method.isConstructor(), bodyLoc(method), List.of()));
             }
         }
-        lignes.add("");
+
+        facts.addType(new TypeFact(type.getQualifiedName(), type.getPackage().getName(), kind(type),
+                List.copyOf(superclasses), List.copyOf(interfaces), List.copyOf(fields), List.copyOf(methods)));
     }
 
-    private static String Type(ITypeBinding type) {
+    private static int bodyLoc(MethodDeclaration method) {
+        Block body = method.getBody();
+        if (body == null || !(method.getRoot() instanceof CompilationUnit cu)) {
+            return 0;
+        }
+        int start = cu.getLineNumber(body.getStartPosition());
+        int end = cu.getLineNumber(body.getStartPosition() + body.getLength() - 1);
+        return end - start + 1;
+    }
+
+    private static String kind(ITypeBinding type) {
         if (type.isInterface()) {
             return "interface";
         }
         if (type.isEnum()) {
-            return "énumération";
+            return "enumeration";
         }
         if (type.isRecord()) {
             return "record";
