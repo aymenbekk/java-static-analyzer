@@ -1,5 +1,7 @@
 package hai913i.tp1;
 
+import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 
@@ -13,6 +15,7 @@ import hai913i.tp1.extract.FactsBuilder;
 import hai913i.tp1.extract.StructureVisitor;
 import hai913i.tp1.model.ProjectFacts;
 import hai913i.tp1.report.TextReport;
+import hai913i.tp1.metrics.metrics;
 
 public final class Main {
 
@@ -51,7 +54,12 @@ public final class Main {
 
         FactsBuilder facts = new FactsBuilder();
         for (ParsedFile file : files) {
-            facts.addSourceFile(file.path());
+            try {
+                facts.addSourceFile(file.path(), Files.readAllLines(file.path()).size());
+            } catch (IOException e) {
+                System.err.println("Erreur : lecture impossible de " + file.path() + " (" + e.getMessage() + ")");
+                System.exit(4);
+            }
         }
 
         // A2 : structure de chaque type (un seul visiteur pour tous les fichiers).
@@ -72,6 +80,49 @@ public final class Main {
         System.out.println();
         TextReport.print(projectFacts);
         System.out.println("Appels orphelins   : " + facts.orphanCalls());
+
+        metrics metrics = new metrics(projectFacts);
+        System.out.println("Nombre de types : " + metrics.getNumberOftypes());
+        System.out.println("Somme des lignes : " + metrics.getSumOfLines());
+        System.out.println("Nombre de methodes : " + metrics.numberOfMethods());
+        System.out.println("Nombre de packages distincts : " + metrics.numberOfDistinctPackages());
+        System.out.println("Moyenne de methodes par type : " + metrics.avgNumberOfMethodsPerType());
+        System.out.println("Moyenne de lignes par methode : " + metrics.avgNumberOfLinesPerMethod());
+        System.out.println("Moyenne de champs par type : " + metrics.avgNumberOfFieldsPerType());
+        metrics.MaxParameters maxParameters = metrics.getMaxParameters();
+        System.out.println("Nombre maximum de parametres : " + maxParameters.count());
+        System.out.println("Methodes avec le maximum de parametres :");
+        for (var method : maxParameters.methods()) {
+            System.out.println("  " + method.id() + " (" + method.parameterTypes().size() + " parametres)");
+        }
+        System.out.println("Top 10% des types par nombre de methodes :");
+        for (var rankedType : metrics.topTenPercentTypesByMethodCount()) {
+            System.out.println("  " + rankedType.item().qualifiedName() + " (" + rankedType.value() + " methodes)");
+        }
+
+        System.out.println("Top 10% des types par nombre d'attributs :");
+        for (var rankedType : metrics.topTenPercentTypesByFieldCount()) {
+            System.out.println("  " + rankedType.item().qualifiedName() + " (" + rankedType.value() + " attributs)");
+        }
+
+        System.out.println(" les classes qui font partie à la fois des deux categories precedentes");
+         for (var rankedType : metrics.typesInBothTopTenPercent()) {
+            System.out.println("  " + rankedType.qualifiedName() );
+        }
+
+        int x = 2; 
+        System.out.println("Les classes qui ont plus de " + x + " methodes :");
+        for (var type : metrics.TypesWithMoreThanXMethods(x)) {
+            System.out.println("  " + type.qualifiedName() + " (" + type.methods().size() + " methodes)");
+        }
+
+        System.out.println("Top 10% des methodes pour chaque type par nombre de lignes de code :");
+        for (var type : projectFacts.types()) {
+            System.out.println("Type : " + type.qualifiedName());
+            for (var rankedMethod : metrics.topTenPercentMethodsByLineCountForType(type)) {
+                System.out.println("  " + rankedMethod.item().id() + " (" + rankedMethod.value() + " lignes)");
+            }
+        }
     }
 
 }

@@ -2,6 +2,7 @@ package hai913i.tp1.extract;
 
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -9,12 +10,13 @@ import java.util.stream.Collectors;
 import hai913i.tp1.model.CallFact;
 import hai913i.tp1.model.MethodFact;
 import hai913i.tp1.model.ProjectFacts;
+import hai913i.tp1.model.SourceFileFact;
 import hai913i.tp1.model.TypeFact;
 
 public class FactsBuilder {
     private final List<TypeFact> types = new ArrayList<>();
     private final List<CallFact> calls = new ArrayList<>();
-    private final List<Path> sourceFiles = new ArrayList<>();
+    private final List<SourceFileFact> sourceFiles = new ArrayList<>();
     private int orphanCalls = 0;
 
     public void addType(TypeFact type) {
@@ -25,8 +27,8 @@ public class FactsBuilder {
         calls.add(call);
     }
 
-    public void addSourceFile(Path path) {
-        sourceFiles.add(path);
+    public void addSourceFile(Path path, int lines) {
+        sourceFiles.add(new SourceFileFact(path, lines));
     }
 
     public int orphanCalls() {
@@ -47,6 +49,7 @@ public class FactsBuilder {
             }
             builtTypes.add(type.replaceMethods(methods));
         }
+        builtTypes.sort(Comparator.comparing(TypeFact::qualifiedName));
 
         orphanCalls = callsByCaller.values().stream().mapToInt(List::size).sum();
 
