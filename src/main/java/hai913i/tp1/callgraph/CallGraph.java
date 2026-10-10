@@ -99,5 +99,45 @@ public class CallGraph {
         return nodes.contains(id);
     }
 
+    public List<String> findNodes(String query) {
+        String q = query.replace(" ", "");
+        String queryHead = headOf(q);
+        List<String> queryParams = q.contains("(") ? simpleParams(q) : null;
+
+        List<String> result = new ArrayList<>();
+        for (String id : nodes) {
+            String head = headOf(id);
+            boolean headMatches = queryHead.contains("#")
+                    ? head.equals(queryHead) || head.endsWith("." + queryHead)
+                    : head.substring(head.indexOf('#') + 1).equals(queryHead);
+            if (headMatches && (queryParams == null || queryParams.equals(simpleParams(id)))) {
+                result.add(id);
+            }
+        }
+        result.sort(null);
+        return result;
+    }
+
+    private static String headOf(String s) {
+        int paren = s.indexOf('(');
+        return paren >= 0 ? s.substring(0, paren) : s;
+    }
+
+    private static List<String> simpleParams(String s) {
+        int open = s.indexOf('(');
+        int close = s.lastIndexOf(')');
+        if (open < 0 || close < open) {
+            return List.of();
+        }
+        String inside = s.substring(open + 1, close).replace(" ", "");
+        if (inside.isEmpty()) {
+            return List.of();
+        }
+        List<String> params = new ArrayList<>();
+        for (String p : inside.split(",")) {
+            params.add(p.substring(p.lastIndexOf('.') + 1));
+        }
+        return params;
+    }
 
 }

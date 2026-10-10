@@ -40,18 +40,20 @@ public class metrics {
     }
 
     public BigDecimal avgNumberOfMethodsPerType() {
-        return roundTwoDecimals((double) numberOfMethods() / getNumberOftypes());
+    return average(numberOfMethods(), getNumberOftypes());
     }
 
-    public BigDecimal avgNumberOfLinesPerMethod(){
+    public BigDecimal avgNumberOfLinesPerMethod() {
         int sumOfLines = facts.types().stream().mapToInt(t -> t.methods().stream().mapToInt(m -> m.bodyLoc()).sum()).sum();
         long methodsWithBody = facts.types().stream().mapToLong(t -> t.methods().stream().filter(m -> m.bodyLoc() > 0).count()).sum();
-        return roundTwoDecimals((double) sumOfLines / methodsWithBody);
+        return average(sumOfLines, methodsWithBody);
     }
 
     public BigDecimal avgNumberOfFieldsPerType() {
-        return roundTwoDecimals((double) facts.types().stream().mapToInt(t -> t.fields().size()).sum() / getNumberOftypes());
+        int sumOfFields = facts.types().stream().mapToInt(t -> t.fields().size()).sum();
+        return average(sumOfFields, getNumberOftypes());
     }
+
 
     public MaxParameters getMaxParameters() {
         int maxCount = facts.types().stream()
@@ -105,9 +107,13 @@ public class metrics {
         return result;
     }
 
-    private static BigDecimal roundTwoDecimals(double value) {
-        return BigDecimal.valueOf(value).setScale(2, RoundingMode.HALF_UP);
+    private static BigDecimal average(long total, long count) {
+    if (count == 0) {
+        return BigDecimal.ZERO.setScale(2);
     }
+    return BigDecimal.valueOf((double) total / count).setScale(2, RoundingMode.HALF_UP);
+    }
+
 
     //generic method to get the top 10% of a list based on a value function
     private static <T> List<Ranked<T>> topTenPercent(List<T> items, ToIntFunction<T> valueFunction) {

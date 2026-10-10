@@ -28,14 +28,21 @@ public class CallGraphReport {
         return report.toString();
     }
 
-    public static String generateQueryReport(CallGraph graph, String id){
+    public static String generateQueryReport(CallGraph graph, String query){
         StringBuilder report = new StringBuilder();
-        report.append("Methode : ").append(id).append("\n");
-        if (!graph.isNode(id)) {
-            report.append("  Methode inconnue\n");
+        List<String> matches = graph.findNodes(query);
+        if (matches.isEmpty()) {
+            report.append("Methode inconnue : ").append(query).append("\n");
             return report.toString();
         }
+        for (String id : matches) {
+            appendMethodQuery(report, graph, id);
+        }
+        return report.toString();
+    }
 
+    private static void appendMethodQuery(StringBuilder report, CallGraph graph, String id) {
+        report.append("Methode : ").append(id).append("\n");
         report.append("  Appelees :\n");
         List<Arc> callees = graph.callees(id);
         if (callees.isEmpty()) {
@@ -53,6 +60,5 @@ public class CallGraphReport {
         for (Arc arc : callers) {
             report.append("    ").append(arc.from()).append(" (").append(arc.weight()).append(")\n");
         }
-        return report.toString();
     }
 }

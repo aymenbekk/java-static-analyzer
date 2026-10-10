@@ -20,6 +20,21 @@ public final class TextReport {
         return report.toString();
     }
 
+    public static String generateStructure(ProjectFacts facts) {
+    StringBuilder report = new StringBuilder();
+    appendStructure(report, facts);
+    appendSummary(report, facts);
+    return report.toString();
+    }
+
+    public static String generateCalls(ProjectFacts facts) {
+        StringBuilder report = new StringBuilder();
+        appendCalls(report, facts);
+        appendSummary(report, facts);
+        return report.toString();
+    }
+
+
     private static void appendStructure(StringBuilder report, ProjectFacts facts) {
         for (TypeFact type : facts.types()) {
             report.append("Type : ").append(type.qualifiedName()).append("\n");
