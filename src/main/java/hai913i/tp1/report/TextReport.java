@@ -12,52 +12,53 @@ public final class TextReport {
     private TextReport() {
     }
 
-    public static void print(ProjectFacts facts) {
-        printStructure(facts);
-        printCalls(facts);
-        printSummary(facts);
+    public static String generateReport(ProjectFacts facts) {
+        StringBuilder report = new StringBuilder();
+        appendStructure(report, facts);
+        appendCalls(report, facts);
+        appendSummary(report, facts);
+        return report.toString();
     }
 
-    // A2 : structure de chaque type.
-    private static void printStructure(ProjectFacts facts) {
+    private static void appendStructure(StringBuilder report, ProjectFacts facts) {
         for (TypeFact type : facts.types()) {
-            System.out.println("Type : " + type.qualifiedName());
-            System.out.println("  genre      : " + type.kind());
-            System.out.println("  paquetage  : " + type.packageName());
-            System.out.println("  superclasses : " + String.join(" ", type.superclasses()));
-            System.out.println("  interfaces   : " + String.join(" ", type.interfaces()));
-            System.out.println("  attributs :");
+            report.append("Type : ").append(type.qualifiedName()).append("\n");
+            report.append("  genre      : ").append(type.kind()).append("\n");
+            report.append("  paquetage  : ").append(type.packageName()).append("\n");
+            report.append("  superclasses : ").append(String.join(" ", type.superclasses())).append("\n");
+            report.append("  interfaces   : ").append(String.join(" ", type.interfaces())).append("\n");
+            report.append("  attributs :\n");
             for (FieldFact field : type.fields()) {
-                System.out.println("    - " + field.name() + " : " + field.declaredType()
-                        + " (" + field.visibility() + ")");
+                report.append("    - ").append(field.name()).append(" : ").append(field.declaredType())
+                        .append(" (").append(field.visibility()).append(")\n");
             }
-            System.out.println("  methodes :");
+            report.append("  methodes :\n");
             for (MethodFact method : type.methods()) {
-                System.out.println("    - " + method.name()
-                        + " paramsCount=" + method.parameterTypes().size()
-                        + " constructeur=" + (method.constructor() ? "oui" : "non"));
+                report.append("    - ").append(method.name())
+                        .append(" paramsCount=").append(method.parameterTypes().size())
+                        .append(" constructeur=").append(method.constructor() ? "oui" : "non").append("\n");
             }
-            System.out.println();
+            report.append("\n");
         }
     }
 
-    // A3 : pour chaque methode, ses appels.
-    private static void printCalls(ProjectFacts facts) {
+    private static void appendCalls(StringBuilder report, ProjectFacts facts) {
         for (TypeFact type : facts.types()) {
             for (MethodFact method : type.methods()) {
                 if (method.calls().isEmpty()) {
                     continue;
                 }
-                System.out.println(method.id());
+                report.append(method.id()).append("\n");
                 for (CallFact call : method.calls()) {
-                    System.out.println("    ligne " + call.sourceLine() + " : receveur " + call.staticReceiverType()
-                            + ", cible " + call.targetId().orElse("<non resolue>"));
+                    report.append("    ligne ").append(call.sourceLine())
+                            .append(" : receveur ").append(call.staticReceiverType())
+                            .append(", cible ").append(call.targetId().orElse("<non resolue>")).append("\n");
                 }
             }
         }
     }
 
-    private static void printSummary(ProjectFacts facts) {
+    private static void appendSummary(StringBuilder report, ProjectFacts facts) {
         int methods = 0, fields = 0;
         int calls = 0, internal = 0, external = 0, unresolved = 0;
         for (TypeFact type : facts.types()) {
@@ -76,13 +77,13 @@ public final class TextReport {
                 }
             }
         }
-        System.out.println();
-        System.out.println("Types              : " + facts.types().size());
-        System.out.println("Methodes           : " + methods);
-        System.out.println("Attributs          : " + fields);
-        System.out.println("Appels de methodes : " + calls);
-        System.out.println("Appels internes    : " + internal);
-        System.out.println("Appels externes    : " + external);
-        System.out.println("Appels non resolus : " + unresolved);
+        report.append("\n");
+        report.append("Types              : ").append(facts.types().size()).append("\n");
+        report.append("Methodes           : ").append(methods).append("\n");
+        report.append("Attributs          : ").append(fields).append("\n");
+        report.append("Appels de methodes : ").append(calls).append("\n");
+        report.append("Appels internes    : ").append(internal).append("\n");
+        report.append("Appels externes    : ").append(external).append("\n");
+        report.append("Appels non resolus : ").append(unresolved).append("\n");
     }
 }

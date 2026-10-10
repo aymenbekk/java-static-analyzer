@@ -17,6 +17,10 @@ import hai913i.tp1.model.ProjectFacts;
 import hai913i.tp1.report.TextReport;
 import hai913i.tp1.metrics.metrics;
 
+import hai913i.tp1.callgraph.CallGraph;
+import hai913i.tp1.report.CallGraphReport;
+import hai913i.tp1.report.MetricsReport;
+
 public final class Main {
 
     private Main() {
@@ -68,7 +72,6 @@ public final class Main {
             file.unit().accept(structure);
         }
 
-        // A3 : appels de methodes (un seul visiteur pour tous les fichiers).
         CallVisitor calls = new CallVisitor(facts);
         for (ParsedFile file : files) {
             file.unit().accept(calls);
@@ -76,53 +79,22 @@ public final class Main {
 
         ProjectFacts projectFacts = facts.build();
 
-        // Affichage : ne lit que le modele de faits (aucune classe de JDT).
+
         System.out.println();
-        TextReport.print(projectFacts);
+        System.out.print(TextReport.generateReport(projectFacts));
         System.out.println("Appels orphelins   : " + facts.orphanCalls());
 
+        int x = 2;
         metrics metrics = new metrics(projectFacts);
-        System.out.println("Nombre de types : " + metrics.getNumberOftypes());
-        System.out.println("Somme des lignes : " + metrics.getSumOfLines());
-        System.out.println("Nombre de methodes : " + metrics.numberOfMethods());
-        System.out.println("Nombre de packages distincts : " + metrics.numberOfDistinctPackages());
-        System.out.println("Moyenne de methodes par type : " + metrics.avgNumberOfMethodsPerType());
-        System.out.println("Moyenne de lignes par methode : " + metrics.avgNumberOfLinesPerMethod());
-        System.out.println("Moyenne de champs par type : " + metrics.avgNumberOfFieldsPerType());
-        metrics.MaxParameters maxParameters = metrics.getMaxParameters();
-        System.out.println("Nombre maximum de parametres : " + maxParameters.count());
-        System.out.println("Methodes avec le maximum de parametres :");
-        for (var method : maxParameters.methods()) {
-            System.out.println("  " + method.id() + " (" + method.parameterTypes().size() + " parametres)");
-        }
-        System.out.println("Top 10% des types par nombre de methodes :");
-        for (var rankedType : metrics.topTenPercentTypesByMethodCount()) {
-            System.out.println("  " + rankedType.item().qualifiedName() + " (" + rankedType.value() + " methodes)");
-        }
+        System.out.print(MetricsReport.generateReport(metrics, projectFacts, x));
 
-        System.out.println("Top 10% des types par nombre d'attributs :");
-        for (var rankedType : metrics.topTenPercentTypesByFieldCount()) {
-            System.out.println("  " + rankedType.item().qualifiedName() + " (" + rankedType.value() + " attributs)");
-        }
+        CallGraph callGraph = new CallGraph(projectFacts);
+        System.out.println();
+        System.out.println("Rapport du graphe d'appels :");
+        System.out.println(CallGraphReport.generateReport(callGraph));
+        System.out.println(CallGraphReport.generateQueryReport(callGraph, "library.model.Loanable#checkOut(library.model.Member)"));
+        System.out.println(CallGraphReport.generateQueryReport(callGraph, "library.model.Item#checkOut(library.model.Member)"));
 
-        System.out.println(" les classes qui font partie à la fois des deux categories precedentes");
-         for (var rankedType : metrics.typesInBothTopTenPercent()) {
-            System.out.println("  " + rankedType.qualifiedName() );
-        }
-
-        int x = 2; 
-        System.out.println("Les classes qui ont plus de " + x + " methodes :");
-        for (var type : metrics.TypesWithMoreThanXMethods(x)) {
-            System.out.println("  " + type.qualifiedName() + " (" + type.methods().size() + " methodes)");
-        }
-
-        System.out.println("Top 10% des methodes pour chaque type par nombre de lignes de code :");
-        for (var type : projectFacts.types()) {
-            System.out.println("Type : " + type.qualifiedName());
-            for (var rankedMethod : metrics.topTenPercentMethodsByLineCountForType(type)) {
-                System.out.println("  " + rankedMethod.item().id() + " (" + rankedMethod.value() + " lignes)");
-            }
-        }
     }
 
 }
