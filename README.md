@@ -53,7 +53,8 @@ src/main/java/hai913i/tp1/
 │                    MethodFact, CallFact, SourceFileFact
 ├── metrics/         les métriques
 ├── callgraph/       CallGraph et Arc : graphe d'appel et requêtes
-└── report/          mise en forme texte : TextReport, MetricsReport, CallGraphReport
+├── report/          mise en forme texte : TextReport, MetricsReport, CallGraphReport
+└── export/          CanonicalExport : les faits au format CSV d'entrée du TP 2
 ```
 
 ### Dépendances
@@ -80,7 +81,8 @@ un seul lot par `ASTParser.createASTs`, avec résolution des bindings (`setResol
 - Dans un fichier qui ne compile pas, l'instruction en erreur est absente de l'AST : ses appels ne
   sont pas comptés. Les autres fichiers sont analysés normalement.
 - Les appels vers une bibliothèque absente du classpath sont comptés comme non résolus.
-- Sortie texte uniquement (pas d'export DOT ni d'interface graphique).
+- Sortie texte, plus un export CSV des faits pour le TP 2 (pas d'export DOT ni d'interface
+  graphique).
 
 ## 2. Environnement
 
@@ -124,7 +126,7 @@ mvn clean package
 ## 4. Exécution
 
 ```text
-java -jar target/hai913i-tp1-analyzer.jar <projet> --action <action> [--x <N>] [--method "<id>"]
+java -jar target/hai913i-tp1-analyzer.jar <projet> --action <action> [--x <N>] [--method "<id>"] [--out <dossier>]
 java -jar target/hai913i-tp1-analyzer.jar --help
 ```
 
@@ -136,6 +138,7 @@ java -jar target/hai913i-tp1-analyzer.jar --help
 | `graph`     | arcs pondérés du graphe d'appel et ses comptes | — |
 | `query`     | méthodes appelées par une méthode, et méthodes qui l'appellent | `--method "<id>"` |
 | `all`       | structure, appels, métriques et graphe | `--x <N>` |
+| `export`    | les faits au format canonique du TP 2 (trois fichiers CSV) | `--out <dossier>` |
 
 - `--x <N>` : seuil de la métrique « classes ayant strictement plus de N méthodes » (entier positif
   ou nul). Obligatoire pour `metrics` et `all`, refusé pour les autres actions.
@@ -143,6 +146,10 @@ java -jar target/hai913i-tp1-analyzer.jar --help
   - `Catalog#add` : toutes les surcharges de `add` dans `Catalog` ;
   - `Catalog#add(Item)` : une surcharge précise, types des paramètres en nom simple ;
   - `library.service.Catalog#add(library.model.Item)` : l'identifiant complet.
+- `--out <dossier>` : dossier où `export` écrit `facts-<nom du projet>-classes.csv`, `-methods.csv`
+  et `-calls.csv` (séparateur `;`, UTF-8, lignes triées). Ce sont les faits d'entrée du TP 2.
+  Obligatoire pour `export`, refusé pour les autres actions. Utiliser un dossier dédié : le TP 2
+  refuse un dossier qui contient plusieurs jeux de faits.
 
 Les chemins qui contiennent des espaces doivent être entre guillemets.
 
@@ -239,6 +246,7 @@ java -jar target/hai913i-tp1-analyzer.jar "C:\chemin\vers\validation" --action q
 | 2    | arguments invalides : option ou action inconnue, X absent ou mal formé, option non autorisée pour l'action |
 | 3    | projet inexploitable : dossier inexistant ou sans fichier `.java` |
 | 4    | fichier source illisible |
+| 5    | dossier de sortie de `export` inaccessible |
 
 ## 5. Validation
 

@@ -5,10 +5,12 @@ import java.util.Set;
 
 public final class CommandLine {
 
-    private static final Set<String> ACTIONS = Set.of("structure", "calls", "metrics", "graph", "query", "all");
+    private static final Set<String> ACTIONS = Set.of("structure", "calls", "metrics", "graph", "query", "all",
+            "export");
 
     public static final String USAGE = String.join("\n",
-            "Usage : java -jar target/hai913i-tp1-analyzer.jar <projet> --action <action> [--x <N>] [--method \"<id>\"]",
+            "Usage : java -jar target/hai913i-tp1-analyzer.jar <projet> --action <action> [--x <N>] [--method \"<id>\"]"
+                    + " [--out <dossier>]",
             "Actions :",
             "  structure   types, attributs et methodes (A2)",
             "  calls       appels de chaque methode (A3)",
@@ -16,9 +18,11 @@ public final class CommandLine {
             "  graph       graphe d'appel (B3)",
             "  query       appelees et appelantes (B3)        necessite --method",
             "  all         tout ce qui precede                necessite --x",
+            "  export      faits au format canonique du TP 2  necessite --out",
             "Exemples :",
             "  ... ../validation --action all --x 5",
-            "  ... ../validation --action query --method \"Catalog#add(Item)\"");
+            "  ... ../validation --action query --method \"Catalog#add(Item)\"",
+            "  ... ../validation --action export --out ../tp1-export");
 
     private CommandLine() {
     }
@@ -31,12 +35,14 @@ public final class CommandLine {
         String action = null;
         Integer x = null;
         String method = null;
+        Path out = null;
 
         for (int i = 1; i < args.length; i++) {
             switch (args[i]) {
                 case "--action" -> action = next(args, ++i, "--action");
                 case "--x" -> x = parseX(next(args, ++i, "--x"));
                 case "--method" -> method = next(args, ++i, "--method");
+                case "--out" -> out = Path.of(next(args, ++i, "--out"));
                 default -> throw new UsageException("option inconnue : " + args[i]);
             }
         }
@@ -64,7 +70,15 @@ public final class CommandLine {
             throw new UsageException("--method ne s'utilise qu'avec l'action query");
         }
 
-        return new Options(project, action, x, method);
+        boolean needsOut = action.equals("export");
+        if (needsOut && out == null) {
+            throw new UsageException("l'action export necessite --out <dossier>");
+        }
+        if (!needsOut && out != null) {
+            throw new UsageException("--out ne s'utilise qu'avec l'action export");
+        }
+
+        return new Options(project, action, x, method, out);
     }
 
     private static String next(String[] args, int i, String option) throws UsageException {

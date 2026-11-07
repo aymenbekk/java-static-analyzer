@@ -1,0 +1,61 @@
+@startuml
+!pragma layout smetana
+skinparam defaultFontName Segoe UI
+skinparam classAttributeIconSize 0
+hide circle
+
+class ProjectFacts <<record>> {
+  types : List<TypeFact>
+  sourceFiles : List<SourceFileFact>
+}
+class SourceFileFact <<record>> {
+  path : Path
+  lines : int
+}
+class TypeFact <<record>> {
+  qualifiedName : String
+  packageName : String
+  kind : String
+  superclasses : List<String>
+  interfaces : List<String>
+  fields : List<FieldFact>
+  methods : List<MethodFact>
+  --
+  replaceMethods(List<MethodFact>) : TypeFact
+}
+class FieldFact <<record>> {
+  name : String
+  declaredType : String
+  visibility : String
+}
+class MethodFact <<record>> {
+  id : String
+  name : String
+  parameterTypes : List<String>
+  constructor : boolean
+  bodyLoc : int
+  calls : List<CallFact>
+  --
+  attachCalls(List<CallFact>) : MethodFact
+}
+class CallFact <<record>> {
+  callerId : String
+  targetId : Optional<String>
+  staticReceiverType : String
+  sourceLine : int
+  resolved : boolean
+  internal : boolean
+}
+
+ProjectFacts "1" *-- "*" TypeFact
+ProjectFacts "1" *-- "*" SourceFileFact
+TypeFact "1" *-- "*" FieldFact
+TypeFact "1" *-- "*" MethodFact
+MethodFact "1" *-- "*" CallFact
+
+note bottom of CallFact
+  callerId et targetId reprennent MethodFact.id
+  (« type qualifié#nom(types des paramètres) »).
+  targetId est vide pour un appel non résolu.
+end note
+@enduml

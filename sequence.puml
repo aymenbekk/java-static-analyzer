@@ -1,0 +1,45 @@
+@startuml
+skinparam defaultFontName Segoe UI
+title Exemple : java -jar hai913i-tp1-analyzer.jar <projet> --action graph
+
+participant Main
+participant CommandLine
+participant ProjectSources
+participant JdtParser
+participant FactsExtractor
+participant FactsBuilder
+participant StructureVisitor
+participant CallVisitor
+participant CallGraph
+participant CallGraphReport
+
+Main -> CommandLine : parse(args)
+CommandLine --> Main : Options
+Main -> ProjectSources : of(projet)
+ProjectSources --> Main : sources (fichiers .java)
+Main -> JdtParser : parse(sources)
+JdtParser --> Main : List<ParsedFile> (AST + bindings)
+Main -> Main : affiche les erreurs de compilation
+
+Main -> FactsExtractor : extract(files)
+FactsExtractor -> FactsBuilder : new FactsBuilder()
+loop chaque fichier
+  FactsExtractor -> FactsBuilder : addSourceFile(path, lignes)
+end
+loop chaque unité de compilation
+  FactsExtractor -> StructureVisitor : unit.accept(structure)
+  StructureVisitor -> FactsBuilder : addType(TypeFact)
+end
+loop chaque unité de compilation
+  FactsExtractor -> CallVisitor : unit.accept(calls)
+  CallVisitor -> FactsBuilder : addCall(CallFact)
+end
+FactsExtractor -> FactsBuilder : build()
+FactsBuilder --> FactsExtractor : ProjectFacts
+FactsExtractor --> Main : Extraction(facts, orphelins)
+
+Main -> CallGraph : new CallGraph(facts)
+Main -> CallGraphReport : generateReport(graph)
+CallGraphReport --> Main : String
+Main -> Main : System.out.print(rapport)
+@enduml

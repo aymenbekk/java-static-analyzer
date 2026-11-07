@@ -20,6 +20,7 @@ import hai913i.tp1.cli.UsageException;
 import hai913i.tp1.report.CallGraphReport;
 import hai913i.tp1.report.MetricsReport;
 import hai913i.tp1.cli.Options;
+import hai913i.tp1.export.CanonicalExport;
 import hai913i.tp1.extract.FactsExtractor;
 
 public final class Main {
@@ -111,6 +112,18 @@ public final class Main {
                 System.out.print(MetricsReport.generateReport(new metrics(projectFacts), projectFacts, options.x()));
                 System.out.println();
                 System.out.print(CallGraphReport.generateReport(new CallGraph(projectFacts)));
+            }
+            case "export" -> {
+                String prefix = CanonicalExport.prefixFor(project);
+                try {
+                    CanonicalExport.write(projectFacts, new CallGraph(projectFacts), options.out(), prefix);
+                } catch (IOException e) {
+                    System.err.println("Erreur : dossier de sortie inaccessible : " + options.out()
+                            + " (" + e.getMessage() + ")");
+                    System.exit(5);
+                    return;
+                }
+                System.out.println("Faits exportes : " + options.out().toAbsolutePath() + " (" + prefix + "-*.csv)");
             }
         }
 

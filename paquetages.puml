@@ -1,0 +1,67 @@
+@startuml
+!pragma layout smetana
+skinparam packageStyle folder
+skinparam defaultFontName Segoe UI
+
+class Main <<orchestrateur>>
+
+package cli {
+  class CommandLine
+  class Options
+  class UsageException
+}
+
+rectangle "connaissent JDT" #FDF0E6 {
+  package parse {
+    class ProjectSources
+    class JdtParser
+  }
+  package extract {
+    class FactsExtractor
+    class FactsBuilder
+    class StructureVisitor
+    class CallVisitor
+  }
+}
+
+rectangle "ne connaissent pas JDT" #EEF6EE {
+  package report {
+    class TextReport
+    class MetricsReport
+    class CallGraphReport
+  }
+  package metrics {
+    class "metrics" as MetricsClass
+  }
+  package callgraph {
+    class CallGraph
+    class Arc
+  }
+  package model {
+    class ProjectFacts
+    class TypeFact
+    class FieldFact
+    class MethodFact
+    class CallFact
+    class SourceFileFact
+  }
+}
+
+Main ..> cli
+Main ..> parse
+Main ..> extract
+Main ..> report
+Main ..> metrics
+Main ..> callgraph
+Main ..> model
+extract ..> parse
+extract ..> model
+report ..> metrics
+report ..> callgraph
+report ..> model
+metrics ..> model
+callgraph ..> model
+
+hide members
+hide circle
+@enduml

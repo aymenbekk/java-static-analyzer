@@ -15,7 +15,7 @@ public class utility {
         if (declaringClass == null) {
             return "<non resolue>";
         }
-        StringJoiner parameters = new StringJoiner(", ", "(", ")");
+        StringJoiner parameters = new StringJoiner(",", "(", ")");
         for (ITypeBinding parameterType : methodDeclaration.getParameterTypes()) {
             parameters.add(parameterType.getErasure().getQualifiedName());
         }
