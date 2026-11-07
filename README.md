@@ -57,6 +57,10 @@ src/main/java/hai913i/tp1/
 └── export/          CanonicalExport : les faits au format CSV d'entrée du TP 2
 ```
 
+Trois diagrammes PlantUML, à la racine du dépôt, décrivent cette architecture :
+`paquetages.puml` (paquetages et dépendances), `modele.puml` (modèle de faits) et `sequence.puml`
+(déroulement de l'action `graph`).
+
 ### Dépendances
 
 - Eclipse JDT Core `org.eclipse.jdt:org.eclipse.jdt.core:3.46.0`, téléchargé par Maven avec ses
@@ -146,6 +150,9 @@ java -jar target/hai913i-tp1-analyzer.jar --help
   - `Catalog#add` : toutes les surcharges de `add` dans `Catalog` ;
   - `Catalog#add(Item)` : une surcharge précise, types des paramètres en nom simple ;
   - `library.service.Catalog#add(library.model.Item)` : l'identifiant complet.
+
+  Dans les sorties, les paramètres d'un identifiant sont séparés par une virgule sans espace
+  (`Catalog#add(library.model.Item,library.model.Item)`) ; dans `--method`, les espaces sont ignorés.
 - `--out <dossier>` : dossier où `export` écrit `facts-<nom du projet>-classes.csv`, `-methods.csv`
   et `-calls.csv` (séparateur `;`, UTF-8, lignes triées). Ce sont les faits d'entrée du TP 2.
   Obligatoire pour `export`, refusé pour les autres actions. Utiliser un dossier dédié : le TP 2
@@ -176,6 +183,23 @@ Number of arcs: 1
 internal sites: 1
 Number of external calls: 1
 Number of unresolved calls: 0
+```
+
+```text
+java -jar target/hai913i-tp1-analyzer.jar src/test/resources/sample --action export --out sample-export
+```
+
+produit dans `sample-export/` :
+
+```text
+facts-sample-classes.csv          facts-sample-methods.csv
+class;simpleName;package          method;owner
+demo.App;App;demo                 demo.App#main(java.lang.String[]);demo.App
+demo.Greeter;Greeter;demo         demo.Greeter#greet(java.lang.String);demo.Greeter
+
+facts-sample-calls.csv
+caller;callerClass;callee;calleeClass;sites
+demo.App#main(java.lang.String[]);demo.App;demo.Greeter#greet(java.lang.String);demo.Greeter;1
 ```
 
 ```text
@@ -226,7 +250,19 @@ Methode : library.model.Loanable#checkOut(library.model.Member)
   Appelees :
     (aucune)
   Appelantes :
-    library.service.LoanService#borrow(library.model.Member, java.lang.String, int) (1)
+    library.service.LoanService#borrow(library.model.Member,java.lang.String,int) (1)
+```
+
+```text
+java -jar target/hai913i-tp1-analyzer.jar "C:\chemin\vers\validation" --action export --out "C:\chemin\vers\tp1-export"
+```
+
+```text
+Racine des sources     : C:\chemin\vers\validation\src
+Unites de compilation  : 14
+Erreurs de compilation : 0
+
+Faits exportes : C:\chemin\vers\tp1-export (facts-validation-*.csv)
 ```
 
 Autres commandes :
@@ -267,6 +303,7 @@ Valeurs attendues sur le projet de validation, toutes obtenues :
 | Modèle | mêmes chiffres calculés depuis le modèle de faits ; deux exécutions donnent une sortie identique |
 | Métriques | Q1–Q4 : 15, 493, 59, 4 · Q5–Q7 : 3.93, 4.64, 1.40 · Q8 : Item (10), Member et LoanService (6) · Q9–Q10 : Item et LoanService · Q11 : X = 5 → 3 classes, X = 4 → 6 classes · Q12 : Item : checkOut (7), LoanService : borrow (14) · Q13 : 5 paramètres, `Statistics#report` |
 | Graphe | 59 nœuds, 44 arcs, 46 sites d'appel internes, 48 externes, 0 non résolu ; `Catalog#add(Item,Item) → Catalog#add(Item)` de poids 2 ; `TextUtils#repeat` récursif ; appelantes de `Loanable#checkOut(Member)` : `LoanService#borrow` seulement ; `Item#checkOut(Member)` : aucune |
+| Export | `facts-validation-classes.csv` : 15 lignes, `-methods.csv` : 59 lignes, `-calls.csv` : 44 lignes (en-tête non compris) |
 
 Échantillons de robustesse :
 
